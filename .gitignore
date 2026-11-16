@@ -1,0 +1,32 @@
+# Explore — dependency & artefak lokal
+node_modules/
+
+# Lokal / artefak (database lokal, email dev, log)
+var/
+var/pgdata/
+var/mail/
+*.log
+*.eml
+
+# Environment (rahasia) — .env.example tetap di-commit sebagai template
+.env
+.env.*
+!.env.example
+
+# Kredensial & sertifikat
+*.pem
+*.key
+*.p12
+*.pfx
+credentials.json
+secrets.*
+
+# Editor & OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Test / coverage
+coverage/
+.nyc_output/

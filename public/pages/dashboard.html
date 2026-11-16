@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dashboard — Explore</title>
+<meta name="description" content="Dashboard pengguna Explore — admin, contributor, dan explorer.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/css/styles.css">
+<link rel="stylesheet" href="/css/dashboard.css">
+</head>
+<body>
+<header class="topbar">
+  <div class="wrap" style="display:flex;align-items:center;justify-content:space-between">
+    <a class="brand" href="/" style="text-decoration:none;color:inherit">
+      <span class="brandmark">✦</span> explore.
+    </a>
+    <nav class="nav">
+      <a href="/">Beranda</a>
+      <a href="/#destinasi">Destinasi</a>
+      <a href="/#peta">Peta</a>
+    </nav>
+    <div class="nav-actions">
+      <div class="auth-guest" id="authGuest" hidden>
+        <button class="btn btn-outline" onclick="openAuth('login')">Masuk</button>
+        <button class="btn btn-dark" onclick="openAuth('register')">Daftar</button>
+      </div>
+      <div class="auth-user" id="authUser" hidden>
+        <button class="userchip" onclick="toggleUserMenu(event)" aria-haspopup="true" aria-label="Menu pengguna">
+          <span class="avatar" id="userAvatar">?</span>
+          <span class="userchip-text"><b id="userName">—</b><small id="userRole">—</small></span>
+          <span class="caret">▾</span>
+        </button>
+        <div class="usermenu" id="userMenu" hidden>
+          <div class="usermenu-email" id="userEmail">—</div>
+          <div class="usermenu-status" id="userStatus">—</div>
+          <button class="usermenu-item" onclick="doLogout()">Keluar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="verify-bar" id="verifyBar" hidden>
+  <span>✉ Email kamu belum diverifikasi — verifikasi diperlukan untuk mengirim kontribusi.</span>
+  <button class="linkbtn" onclick="resendVerification()">Kirim ulang email</button>
+  <button class="linkbtn light" onclick="document.getElementById('verifyBar').hidden=true">Tutup</button>
+</div>
+
+<main class="wrap dash" id="dashRoot" hidden>
+  <aside class="dash-nav" id="dashNav"></aside>
+  <section class="dash-main" id="dashMain"></section>
+</main>
+
+<div class="wrap" id="dashGate" hidden style="padding:70px 0;text-align:center">
+  <div class="panel" style="max-width:460px;margin:auto">
+    <h2>Silakan login</h2>
+    <p style="font-size:13px;color:var(--muted)">Dashboard hanya untuk pengguna yang sudah masuk.</p>
+    <div class="form-actions" style="justify-content:center">
+      <button class="btn btn-dark" onclick="openAuth('login')">Masuk</button>
+      <button class="btn btn-light" onclick="openAuth('register')">Daftar</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+<div class="modal-backdrop" id="modal" onclick="if(event.target===this)closeModal()">
+  <div class="modal" id="modalContent"></div>
+</div>
+
+<script type="module" src="/js/dashboard.js"></script>
+</body>
+</html>

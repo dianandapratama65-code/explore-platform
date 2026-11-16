@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Verifikasi email — Explore</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+<main class="token-page">
+  <div class="token-card">
+    <a class="brand" href="/" style="text-decoration:none;color:inherit"><span class="brandmark">✦</span> explore.</a>
+    <div class="eyebrow">Verifikasi email</div>
+    <h1>Mengaktifkan akun kamu</h1>
+    <p>Tautan dari email kamu sedang diproses. Verifikasi diperlukan sebelum kamu dapat
+    mengirim kontribusi sebagai contributor.</p>
+    <div class="token-status" id="status"></div>
+    <div class="token-actions" id="actions" hidden>
+      <button class="btn btn-dark" onclick="window.location='/'">Mulai menjelajah</button>
+      <button class="btn btn-light" id="resendBtn" hidden>Kirim ulang email verifikasi</button>
+    </div>
+  </div>
+</main>
+<script type="module">
+const statusEl = document.getElementById('status');
+const actionsEl = document.getElementById('actions');
+const resendBtn = document.getElementById('resendBtn');
+
+const token = new URLSearchParams(location.search).get('token');
+
+function show(kind, message) {
+  statusEl.className = 'token-status ' + kind;
+  statusEl.textContent = message;
+  actionsEl.hidden = false;
+}
+
+if (!token) {
+  show('err', 'Tautan tidak memiliki token. Buka kembali link dari email verifikasi kamu.');
+} else {
+  try {
+    const res = await fetch('/api/auth/verify-email', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token }),
+    });
+    const data = await res.json().catch(() => null);
+    if (res.ok) {
+      show('ok', data.message || 'Email berhasil diverifikasi. Silakan login.');
+    } else {
+      show('err', data?.error?.message || 'Tautan tidak valid atau sudah kedaluwarsa.');
+      resendBtn.hidden = false;   // token mati → tawarkan kirim ulang (setelah login)
+    }
+  } catch {
+    show('err', 'Tidak dapat terhubung ke server. Jalankan npm run dev lalu coba lagi.');
+  }
+}
+
+resendBtn.addEventListener('click', async () => {
+  try {
+    const res = await fetch('/api/auth/resend-verification', { method: 'POST' });
+    const data = await res.json().catch(() => null);
+    statusEl.className = 'token-status ' + (res.ok ? 'ok' : 'err');
+    statusEl.textContent = res.ok
+      ? (data.message || 'Email verifikasi dikirim ulang. (Mode dev: lihat var/mail/)')
+      : (data?.error?.message || 'Gagal mengirim ulang. Login dulu lalu coba lagi.');
+    if (!res.ok) window.location = '/';
+  } catch {
+    statusEl.className = 'token-status err';
+    statusEl.textContent = 'Tidak dapat terhubung ke server.';
+  }
+});
+</script>
+</body>
+</html>
