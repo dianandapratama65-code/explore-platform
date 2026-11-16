@@ -26,6 +26,14 @@ const cfg = {
   appPassword: process.env.PG_APP_PASSWORD || 'explore_app_dev',
   dataDir: path.resolve(ROOT, process.env.PG_DATA_DIR || 'var/pgdata'),
   external: process.env.PG_EXTERNAL === 'true',
+  ssl: (() => {
+    if (process.env.PG_SSL === 'true') return { rejectUnauthorized: false };
+    if (process.env.PG_SSL === 'false') return undefined;
+    // Auto-deteksi Neon (host mengandung 'neon.tech' atau 'neon.database')
+    const h = process.env.PG_HOST || '';
+    if (/neon\.(tech|database)/i.test(h)) return { rejectUnauthorized: false };
+    return undefined;
+  })(),
 };
 
 // Fail-fast (production): password DB wajib dikonfigurasi, bukan default dev.
@@ -46,8 +54,9 @@ let appPool = null;
 /** Cek apakah server PostgreSQL sudah bisa dihubungi. */
 async function ping() {
   const client = new Client({
-    host: cfg.host, port: cfg.port, database: 'postgres',
+    host: cfg.host, port: cfg.port, database: cfg.database,
     user: cfg.user, password: cfg.password,
+    ssl: cfg.ssl,
     connectionTimeoutMillis: 2500,
   });
   try {
@@ -104,6 +113,7 @@ async function ensureDatabaseExists() {
   const client = new Client({
     host: cfg.host, port: cfg.port, database: 'postgres',
     user: cfg.user, password: cfg.password,
+    ssl: cfg.ssl,
     connectionTimeoutMillis: 5000,
   });
   try {
@@ -154,6 +164,7 @@ export function getSuperPool() {
     superPool = new Pool({
       host: cfg.host, port: cfg.port, database: cfg.database,
       user: cfg.user, password: cfg.password,
+      ssl: cfg.ssl,
       max: 4,
     });
     superPool.on('error', () => {}); // hindari crash saat server berhenti
@@ -167,6 +178,7 @@ export function getAppPool() {
     appPool = new Pool({
       host: cfg.host, port: cfg.port, database: cfg.database,
       user: cfg.appUser, password: cfg.appPassword,
+      ssl: cfg.ssl,
       max: 10,
       idleTimeoutMillis: 30000,
     });

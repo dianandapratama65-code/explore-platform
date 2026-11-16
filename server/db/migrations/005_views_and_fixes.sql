@@ -14,7 +14,11 @@ CREATE OR REPLACE FUNCTION is_super()
 RETURNS boolean LANGUAGE sql STABLE AS $$
   SELECT COALESCE(
     (SELECT rolsuper FROM pg_roles WHERE rolname = current_user), false
-  );
+  )
+  -- Kompatibel dengan Neon: role owner database (bukan superuser) juga
+  -- dianggap "super" untuk keperluan bypass guard trigger migrasi/seed,
+  -- tanpa memberi hak istimewa kepada role aplikasi (explore_app).
+  OR pg_has_role(current_user, 'pg_database_owner', 'USAGE');
 $$;
 
 CREATE OR REPLACE FUNCTION guard_user_role()

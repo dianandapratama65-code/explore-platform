@@ -1,7 +1,7 @@
 import './setup-env.js';
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { startDatabase, stopDatabase, withDb, getSuperPool } from '../server/db/pg.js';
+import { startDatabase, stopDatabase, withDb, getSuperPool, getAppPool, dbConfig } from '../server/db/pg.js';
 import { buildApp } from '../server/app.js';
 
 let server, base;
@@ -129,4 +129,40 @@ test('security: header keamanan (helmet) aktif', async () => {
   assert.ok(h.get('x-content-type-options') === 'nosniff' || h.get('content-security-policy'),
     'header keamanan harus ada');
   assert.ok(h.get('x-powered-by') === null, 'x-powered-by harus dimatikan');
+});// ------------------------------------------------------------
+// Konfigurasi SSL & perilaku role (kompatibilitas Neon)
+// ------------------------------------------------------------
+test('ssl: mode dev (NODE_ENV=test) tidak mengaktifkan SSL (tanpa PG_SSL)', async () => {
+  const { dbConfig } = await import('../server/db/pg.js');
+  assert.equal(dbConfig.ssl, undefined,
+    'SSL harus undefined di dev agar koneksi lokal tetap jalan');
+});
+
+test('ssl: auto-deteksi host Neon mengaktifkan SSL (logika)', async () => {
+  const isNeon = (host) => /neon\.(tech|database)/i.test(host || '');
+  assert.equal(isNeon('ep-cool-leaf-123456.ap-southeast-1.aws.neon.tech'), true);
+  assert.equal(isNeon('127.0.0.1'), false);
+  assert.equal(isNeon('localhost'), false);
+});
+
+test('role: is_super() false untuk role aplikasi (RLS tetap menegakkan)', async () => {
+  const { withDb, getSuperPool } = await import('../server/db/pg.js');
+  const { rows } = await withDb(null, (c) => c.query('SELECT is_super() AS v'));
+  assert.equal(rows[0].v, false, 'role aplikasi tidak boleh dianggap superuser');
+  const superRows = await getSuperPool().query('SELECT is_super() AS v');
+  assert.equal(superRows.rows[0].v, true, 'superuser lokal terdeteksi super');
+});
+
+test('fail-fast: production tanpa JWT_SECRET menolak start', async () => {
+  const { spawnSync } = await import('node:child_process');
+  const res = spawnSync(process.execPath, ['-e',
+    "import('./server/config.js').then(()=>{console.log('STARTED');process.exit(0);}).catch(e=>{console.error('FAIL:'+e.message);process.exit(1);})",
+  ], {
+    cwd: 'C:/Users/sanju/Desktop/HTML/CHAT BANYUWANGI',
+    env: { ...process.env, NODE_ENV: 'production', JWT_SECRET: '' },
+    encoding: 'utf8',
+    timeout: 15000,
+  });
+  assert.notEqual(res.status, 0, 'harus gagal start di production tanpa JWT_SECRET');
+  assert.match(res.stderr + res.stdout, /JWT_SECRET wajib diisi|FAIL:/);
 });
