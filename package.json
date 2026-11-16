@@ -3,6 +3,9 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
+  "engines": {
+    "node": ">=18.0.0"
+  },
   "description": "Explore — platform global discovery multi-role (Admin, Contributor, Explorer, Guest) dengan PostgreSQL",
   "scripts": {
     "db:start": "node server/db/start.js",

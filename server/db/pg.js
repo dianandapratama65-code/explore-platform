@@ -8,7 +8,6 @@ import path from 'node:path';
 import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import pg from 'pg';
-import EmbeddedPostgres from 'embedded-postgres';
 
 const { Pool, Client } = pg;
 
@@ -85,6 +84,7 @@ export async function startDatabase() {
   }
 
   const initialised = fs.existsSync(path.join(cfg.dataDir, 'PG_VERSION'));
+  const { default: EmbeddedPostgres } = await import('embedded-postgres');
   embedded = new EmbeddedPostgres({
     databaseDir: cfg.dataDir,
     user: cfg.user,

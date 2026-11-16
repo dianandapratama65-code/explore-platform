@@ -7,6 +7,7 @@
 // ============================================================
 import fs from 'node:fs';
 import path from 'node:path';
+import os from 'node:os';
 import { createTransport } from 'nodemailer';
 import { config } from '../config.js';
 import { ROOT } from '../db/pg.js';
@@ -43,9 +44,17 @@ export async function sendMail({ to, subject, text, html }) {
   }
 
   // Mode pengembangan: tulis file .eml
-  fs.mkdirSync(MAIL_DIR, { recursive: true });
+  // Di lingkungan read-only (mis. Vercel serverless) folder var/mail tidak
+  // dapat ditulis — fallback ke os.tmpdir(), lalu abaikan jika tetap gagal
+  // agar endpoint auth tidak crash.
+  let dir = MAIL_DIR;
+  try {
+    fs.mkdirSync(dir, { recursive: true });
+  } catch {
+    dir = os.tmpdir();
+  }
   const safe = to.replace(/[^a-z0-9._-]/gi, '_');
-  const file = path.join(MAIL_DIR, `${Date.now()}-${safe}.eml`);
+  const file = path.join(dir, `${Date.now()}-${safe}.eml`);
   const eml = [
     `From: ${record.from}`,
     `To: ${to}`,
@@ -55,10 +64,14 @@ export async function sendMail({ to, subject, text, html }) {
     text,
     '',
   ].join('\r\n');
-  fs.writeFileSync(file, eml, 'utf8');
-  record.devPath = file;
-  console.log(`[mail:dev] → ${to} | ${subject}\n            ${file}`);
-  return { id: record.sentAt, devPath: file };
+  try {
+    fs.writeFileSync(file, eml, 'utf8');
+    record.devPath = file;
+    console.log(`[mail:dev] → ${to} | ${subject}\n            ${file}`);
+  } catch (err) {
+    console.warn(`[mail:dev] gagal menulis email ke disk: ${err.message}`);
+  }
+  return { id: record.sentAt, devPath: record.devPath };
 }
 
 /** Tautan bantuan akun (dipakai email verifikasi/reset). */
